@@ -124,21 +124,13 @@ def index():
 
 @app.route("/debug")
 def debug():
-    results = []
-    tests = [
-        ("Nobitex", "https://api.nobitex.ir/market/stats"),
-        ("BrsApi", "https://Api.BrsApi.ir/Market/Gold_Currency_Pro.php?key=FreeSV0E1LSgB9RDjuf0QorSLViX8pPG&section=cryptocurrency"),
-        ("AlanChand", "https://alanchand.com/api/currency/tether"),
-        ("CoinGecko-USD", "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd"),
-        ("Wallex", "https://api.wallex.ir/v1/markets"),
-    ]
-    for name, url in tests:
-        try:
-            r = requests.get(url, timeout=8)
-            results.append(f"{name}: STATUS {r.status_code} | {r.text[:150]}")
-        except Exception as e:
-            results.append(f"{name}: EXCEPTION {type(e).__name__}: {e}")
-    return "<br><br>".join(results)
+    try:
+        r = requests.get("https://api.wallex.ir/v1/markets", timeout=8)
+        data = r.json()
+        usdt_data = data.get("result", {}).get("symbols", {}).get("USDTTMN", {})
+        return f"<pre>{usdt_data}</pre>"
+    except Exception as e:
+        return f"EXCEPTION: {type(e).__name__}: {e}"
 
 
 if __name__ == "__main__":
