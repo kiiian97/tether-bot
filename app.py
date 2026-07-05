@@ -11,34 +11,28 @@ TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 MAX_RETRIES = 3
 RETRY_DELAY = 1.5  # ثانیه
-CACHE_TTL = 30  # ثانیه - مدت اعتبار قیمت ذخیره‌شده
+CACHE_TTL = 20  # ثانیه - مدت اعتبار قیمت ذخیره‌شده
 
 _price_cache = {"price": None, "time": 0}
 
 
 def get_usdt_price():
-    """نرخ لحظه‌ای تتر به تومان را از نوبیتکس می‌گیرد (نرخ واقعی بازار آزاد)."""
+    """نرخ لحظه‌ای تتر به تومان را از Wallex می‌گیرد."""
     now = time.time()
     if _price_cache["price"] and (now - _price_cache["time"] < CACHE_TTL):
         return _price_cache["price"]
 
     for attempt in range(MAX_RETRIES):
         try:
-            resp = requests.post(
-                "https://api.nobitex.ir/market/stats",
-                json={"srcCurrency": "usdt", "dstCurrency": "rls"},
-                timeout=10,
-            )
-            print(f"NOBITEX STATUS: {resp.status_code}", flush=True)
-            print(f"NOBITEX BODY: {resp.text[:500]}", flush=True)
+            resp = requests.get("https://api.wallex.ir/v1/markets", timeout=10)
             data = resp.json()
-            rial_price = float(data["stats"]["usdt-rls"]["latest"])
-            toman_price = rial_price / 10  # ریال به تومان
+            usdt_data = data["result"]["symbols"]["USDTTMN"]
+            toman_price = float(usdt_data["stats"]["lastPrice"])
             _price_cache["price"] = toman_price
             _price_cache["time"] = now
             return toman_price
         except Exception as e:
-            print(f"NOBITEX EXCEPTION: {type(e).__name__}: {e}", flush=True)
+            print(f"WALLEX EXCEPTION: {type(e).__name__}: {e}", flush=True)
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
 
@@ -120,17 +114,6 @@ def webhook():
 @app.route("/")
 def index():
     return "Bot is running."
-
-
-@app.route("/debug")
-def debug():
-    try:
-        r = requests.get("https://api.wallex.ir/v1/markets", timeout=8)
-        data = r.json()
-        usdt_data = data.get("result", {}).get("symbols", {}).get("USDTTMN", {})
-        return f"<pre>{usdt_data}</pre>"
-    except Exception as e:
-        return f"EXCEPTION: {type(e).__name__}: {e}"
 
 
 if __name__ == "__main__":
