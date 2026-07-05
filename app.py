@@ -29,13 +29,16 @@ def get_usdt_price():
                 json={"srcCurrency": "usdt", "dstCurrency": "rls"},
                 timeout=10,
             )
+            print(f"NOBITEX STATUS: {resp.status_code}", flush=True)
+            print(f"NOBITEX BODY: {resp.text[:500]}", flush=True)
             data = resp.json()
             rial_price = float(data["stats"]["usdt-rls"]["latest"])
             toman_price = rial_price / 10  # ریال به تومان
             _price_cache["price"] = toman_price
             _price_cache["time"] = now
             return toman_price
-        except Exception:
+        except Exception as e:
+            print(f"NOBITEX EXCEPTION: {type(e).__name__}: {e}", flush=True)
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
 
